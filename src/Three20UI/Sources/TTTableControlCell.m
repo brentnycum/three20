@@ -28,6 +28,9 @@
 // Core
 #import "Three20Core/TTCorePreprocessorMacros.h"
 
+// Style
+#import "Three20Style/Three20Style.h"
+
 static const CGFloat kDefaultTextViewLines = 5.0f;
 static const CGFloat kControlPadding = 8.0f;
 
@@ -96,12 +99,14 @@ static const CGFloat kControlPadding = 8.0f;
 + (CGFloat)tableView:(UITableView*)tableView rowHeightForObject:(id)object {
   UIView* view = nil;
 
+  NSString *caption = @"";
   if ([object isKindOfClass:[UIView class]]) {
     view = object;
 
   } else {
     TTTableControlItem* controlItem = object;
     view = controlItem.control;
+    caption = controlItem.caption;
   }
 
   CGFloat height = view.height;
@@ -127,6 +132,32 @@ static const CGFloat kControlPadding = 8.0f;
     }
   }
 
+  if ([view isKindOfClass:[UISegmentedControl class]]) {
+    UISegmentedControl *seg = (UISegmentedControl *)view;
+    if ([seg numberOfSegments] == 3) {
+      CGFloat width = tableView.frame.size.width - (kTableCellHPadding*2 + 10*2)
+            - view.frame.size.width - 225;
+      CGSize size = [caption sizeWithFont:TTSTYLEVAR(tableFont)
+                                constrainedToSize:CGSizeMake(width, CGFLOAT_MAX)
+                                    lineBreakMode:UILineBreakModeWordWrap];
+        if (size.height > 2000) {
+          return 2000;
+        }
+        return size.height + kTableCellVPadding*2;
+      }
+
+    } else if ([view isKindOfClass:[UISwitch class]]) {
+      CGFloat width = tableView.frame.size.width - (kTableCellHPadding*2 + 10*2)
+        - view.frame.size.width - 225;
+      CGSize size = [caption sizeWithFont:TTSTYLEVAR(tableFont)
+                    constrainedToSize:CGSizeMake(width, CGFLOAT_MAX)
+                        lineBreakMode:UILineBreakModeWordWrap];
+      if (size.height > 2000) {
+        return 2000;
+      }
+    return size.height + kTableCellVPadding*2;
+  }
+
   if (height < TT_ROW_HEIGHT) {
     return TT_ROW_HEIGHT;
 
@@ -145,6 +176,13 @@ static const CGFloat kControlPadding = 8.0f;
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 - (void)layoutSubviews {
   [super layoutSubviews];
+
+  self.textLabel.lineBreakMode = UILineBreakModeWordWrap;
+  self.textLabel.numberOfLines = 0;
+
+  CGRect f = self.textLabel.frame;
+  f.size.width -= 220;
+  self.textLabel.frame = f;
 
   if ([TTTableControlCell shouldSizeControlToFit:_control]) {
     _control.frame = CGRectInset(self.contentView.bounds, 2, kTableCellSpacing / 2);
@@ -175,6 +213,23 @@ static const CGFloat kControlPadding = 8.0f;
     [self.contentView addSubview:_control];
     _control.frame = CGRectMake(minX, floor(self.contentView.height/2 - _control.height/2),
                                 contentWidth, _control.height);
+
+    if ([_control isKindOfClass:[UISegmentedControl class]]) {
+      UISegmentedControl *seg = (UISegmentedControl *)_control;
+      if ([seg numberOfSegments] == 3) {
+        _control.frame = CGRectMake(self.contentView.frame.size.width - 210,
+                                    floor(self.contentView.height/2 - _control.height/2),
+                                    200, _control.height);
+      }
+
+    } else if ([_control isKindOfClass:[UITextField class]]) {
+      if (_control.frame.size.width < 200) {
+        _control.frame = CGRectMake(self.contentView.frame.size.width - 210,
+                                    floor(self.contentView.height/2 - _control.height/2),
+                                    200, _control.height);
+      }
+    }
+
   }
 }
 
